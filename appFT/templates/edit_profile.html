@@ -1,0 +1,75 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редактировать профиль</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url("{% static 'images/scale_1200.png' %}") no-repeat center center fixed;
+            background-size: cover;
+            color: #f0f0f0;
+        }
+        .profile-container {
+            margin: 0 auto;
+            padding: 20px; 
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            background-color: rgba(43, 43, 43, 0.8); 
+        }
+        .profile-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #8B0000; 
+        }
+        h1, h2 {
+            color: #CD5C5C; 
+        }
+        .section {
+            margin-top: 20px;
+            padding-top: 20px;
+        }
+        .btn-primary {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container rounded profile-container mt-5 mb-5">
+        <div class="row">
+            <div class="col-md-3 border-right text-center p-3">
+                
+                <h3 class="font-weight-bold">{{ member.first_name }} {{ member.last_name }}</h3>
+                <p class="text-black-50">{{ member.email }}</p>
+            </div>
+            <div class="col-md-5 border-right p-3">
+                <h4>Настройки профиля</h4>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <div class="text-center">
+                        <button class="btn btn-primary" type="submit">Сохранить профиль</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-4 p-3">
+                <h4>Информация о членстве</h4>
+                <p><strong>План:</strong> {{ member.plan.name }}</p>
+                <p><strong>Цена:</strong> {{ member.plan.price|floatformat:0 }} тенге</p>
+                <p><strong>Тренер:</strong> {{ member.trainer.name|default:"Не назначен" }}</p>
+                <p><strong>Дополнительные пожелания:</strong> {{ member.additional_info|default:"Нет" }}</p>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <a href="{% url 'edit_profile' %}" class="btn btn-secondary">Изменить профиль</a>
+            <a href="{% url 'logout' %}" class="btn btn-danger">Выйти</a>
+        </div>
+    </div>
+</body>
+</html>

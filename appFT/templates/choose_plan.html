@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выбор фитнес плана</title>
+    {% load static %}
+    <style>
+        /* Основные стили для страницы */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-image: url('{% static 'images/6288409505.jpg' %}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: #f1f1f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        /* Стиль контейнера формы */
+        .form-container {
+            background-color: rgba(30, 30, 30, 0.9); /* Более темный фон */
+            padding: 40px; /* Увеличенные отступы */
+            border-radius: 10px;
+            width: 100%;
+            max-width: 500px; /* Максимальная ширина */
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3); /* Тень для контейнера */
+        }
+        
+        /* Заголовок */
+        h1 {
+            text-align: center;
+            font-size: 28px; /* Увеличенный размер */
+            color: #ffffff;
+            margin-bottom: 30px; /* Увеличенный отступ снизу */
+            font-weight: bold; /* Жирный текст */
+        }
+        
+        /* Стиль каждого блока формы */
+        .form-group {
+            margin-bottom: 20px; /* Увеличенные отступы */
+        }
+        
+        /* Метки полей формы */
+        label {
+            display: block;
+            font-weight: bold; /* Жирный текст */
+            margin-bottom: 5px;
+            color: #ffffff; /* Белый цвет для меток */
+        }
+        
+        /* Поля ввода и выбора */
+        input, select, textarea {
+            width: 100%;
+            height: 45px; /* Увеличенная высота полей ввода */
+            padding: 10px;
+            background-color: #444; /* Тёмный фон для полей */
+            border: none;
+            border-radius: 5px;
+            color: #f1f1f1;
+            font-size: 16px;
+        }
+        
+        /* Плейсхолдеры */
+        input::placeholder, textarea::placeholder {
+            color: #a9a9a9; /* Светло-серый цвет плейсхолдера */
+        }
+        
+        /* Стиль кнопки */
+        button {
+            width: 100%;
+            height: 45px; /* Увеличенная высота кнопки */
+            background-color: #e63946; /* Ярко-красный цвет кнопки */
+            color: #ffffff;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        button:hover {
+            background-color: #d62839; /* Темнее при наведении */
+        }
+        
+        /* Ошибки валидации */
+        .error {
+            color: #e74c3c; /* Красный цвет для ошибок */
+            font-size: 14px;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 20px;
+            }
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <h1>Выберите ваш фитнес план</h1>
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                {{ form.first_name.label_tag }}
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                    <div class="error">{{ form.first_name.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.last_name.label_tag }}
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                    <div class="error">{{ form.last_name.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.email.label_tag }}
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div class="error">{{ form.email.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.plan.label_tag }}
+                {{ form.plan }}
+                {% if form.plan.errors %}
+                    <div class="error">{{ form.plan.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.trainer.label_tag }}
+                {{ form.trainer }}
+                {% if form.trainer.errors %}
+                    <div class="error">{{ form.trainer.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.additional_info.label_tag }}
+                {{ form.additional_info }}
+                {% if form.additional_info.errors %}
+                    <div class="error">{{ form.additional_info.errors }}</div>
+                {% endif %}
+            </div>
+
+            <button type="submit">Подтвердить</button>
+        </form>
+    </div>
+
+</body>
+</html>

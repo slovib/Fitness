@@ -1,0 +1,277 @@
+{% load static %}
+{% load my_filters %}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background: url("{% static 'images/scale_1200.png' %}") no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .profile-container {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            margin-top: 50px;
+        }
+
+        .profile-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #6c757d;
+        }
+
+        h4 {
+            font-weight: bold;
+            color: #f0f0f0;
+        }
+
+        .labels {
+            font-size: 14px;
+            font-weight: bold;
+            color: #f0f0f0;
+        }
+
+        .training-info {
+            font-size: 14px;
+            font-weight: normal;
+            color: #333;
+        }
+
+        .date-info {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+
+        .btn-custom {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-custom:hover {
+            background-color: #5a6268;
+        }
+
+        .calendar-table {
+            margin-top: 30px;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            table-layout: fixed; /* Чтобы все ячейки были одинаковой ширины */
+            width: 100%; /* Заполняем всю ширину контейнера */
+        }
+
+        .calendar-table th, .calendar-table td {
+            padding: 5px;  /* Меньше padding, чтобы ячейки были меньше */
+            vertical-align: top;
+            text-align: center;
+            width: 14.28%; /* Каждая ячейка будет занимать 1/7 от ширины таблицы */
+            height: 70px;  /* Фиксированная высота для ячеек */
+            font-size: 12px;  /* Меньший размер шрифта для текста */
+        }
+
+        .calendar-table th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .calendar-table td {
+            transition: background-color 0.3s;
+        }
+
+        .calendar-table td:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .table-success {
+            background-color: #c8e6c9;
+            border: 2px solid #4caf50;
+        }
+
+        .today {
+            background-color: rgba(255, 193, 7, 0.2);
+            border: 2px solid rgba(255, 193, 7, 0.5);
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+            border-radius: 8px;
+        }
+
+        .past-day {
+            background-color: #f0f0f0;
+            color: #ccc;
+            pointer-events: none; /* Отключаем кликабельность */
+        }
+
+        .modal-dialog {
+            max-width: 500px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container profile-container">
+        <div class="row">
+            <div class="col-md-3 text-center">
+                {% if member.profile_image %}
+                    <img class="profile-image mt-4" src="{{ member.profile_image.url }}" alt="Profile Image">
+                {% else %}
+                    <img class="profile-image mt-4" src="{% static 'media/default_avatar.png' %}" alt="Default Image">
+                {% endif %}
+                <h4 class="mt-3">{{ member.first_name }} {{ member.last_name }}</h4>
+                <p>{{ member.email }}</p>
+            </div>
+            <div class="col-md-9">
+                <h4 class="text-right">Информация о профиле</h4>
+                <div class="mt-3">
+                    <div class="labels">Тренер:</div>
+                    {% if member.trainer %}
+                        <p>{{ member.trainer.name }}</p>
+                    {% else %}
+                        <p>Не назначен</p>
+                    {% endif %}
+                    <div class="labels">План тренировок:</div>
+                    <p>{{ member.plan.name }}</p>
+                    <div class="labels">Цена:</div>
+                    <p>{{ member.plan.price }} тенге</p>
+                </div>
+                <div class="mt-5 text-center">
+                    <a href="{% url 'edit_profile' %}" class="btn btn-custom">Редактировать профиль</a>
+                    <a href="{% url 'logout' %}" class="btn btn-danger">Выйти</a>
+                    <a href="{% url 'index' %}" class="btn btn-primary">На главную</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5">
+            <h4>Календарь тренировок</h4>
+            <table class="table table-bordered calendar-table">
+                <thead class="thead-light">
+                    <tr>
+                        <th class="text-center">Пн</th>
+                        <th class="text-center">Вт</th>
+                        <th class="text-center">Ср</th>
+                        <th class="text-center">Чт</th>
+                        <th class="text-center">Пт</th>
+                        <th class="text-center">Сб</th>
+                        <th class="text-center">Вс</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for week in weeks %}
+                        <tr>
+                            {% for day in week %}
+                                {% if day < today %}
+                                    <td class="text-center past-day">
+                                        <div class="date-info">{{ day.day }}</div>
+                                        <span class="training-info text-muted">Прошедший день</span>
+                                    </td>
+                                {% else %}
+                                    <td class="text-center {% if day == today %}today{% endif %} {% if scheduled_sessions|get_item:day %}table-success{% endif %}">
+                                        <div class="date-info">{{ day.day }}</div>
+                                        <div>
+                                            {% if scheduled_sessions|get_item:day %}
+                                                <span class="training-info">
+                                                    <strong>Тренировка:</strong> {{ scheduled_sessions|get_item:day|join:", " }}
+                                                </span>
+                                            {% else %}
+                                                <span class="training-info text-muted">Нет тренировок</span>
+                                            {% endif %}
+                                        </div>
+                                        <button class="btn btn-primary mt-2" data-toggle="modal" data-target="#trainingModal" data-day="{{ day }}">Записаться</button>
+                                    </td>
+                                {% endif %}
+                            {% empty %}
+                                <td class="text-center"></td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal для выбора времени и тренера -->
+    <div class="modal fade" id="trainingModal" tabindex="-1" role="dialog" aria-labelledby="trainingModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="trainingModalLabel">Записаться на тренировку</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="trainingForm">
+                        <input type="hidden" name="date" id="trainingDate">
+                        <div class="form-group">
+                            <label for="trainer">Выберите тренера</label>
+                            <select name="trainer" id="trainer" class="form-control">
+                                {% for trainer in trainers %}
+                                    <option value="{{ trainer.id }}">{{ trainer.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="time">Выберите время</label>
+                            <input type="datetime-local" name="date_time" id="date_time" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Записаться</button>
+                    </form>
+                    <div id="error-message" class="text-danger mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Открываем модалку с правильной датой
+            $(".btn-primary").click(function() {
+                var day = $(this).data("day");
+                $("#trainingDate").val(day);
+            });
+
+            // Обработка формы записи на тренировку
+            $("#trainingForm").submit(function(event) {
+                event.preventDefault();
+
+                var date_time = $("#date_time").val();
+                var trainer = $("#trainer").val();
+
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'create_training_session' %}",
+                    data: {
+                        'date_time': date_time,
+                        'trainer': trainer,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            alert(response.message);
+                            $('#trainingModal').modal('hide');
+                            location.reload();  // Перезагружаем страницу после записи
+                        } else {
+                            $('#error-message').text(response.message);  // Показываем ошибку
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

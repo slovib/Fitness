@@ -1,0 +1,201 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат</title>
+    <style>
+        body {
+            background: url("{% static 'images/scale_1200.png' %}") no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+        }
+
+        .--dark-theme {
+            --chat-background: rgba(10, 14, 14, 0.95);
+            --chat-panel-background: #131719;
+            --chat-bubble-background: #14181a;
+            --chat-bubble-active-background: #171a1b;
+            --chat-add-button-background: #212324;
+            --chat-send-button-background: #8147fc;
+            --chat-text-color: #a3a3a3;
+            --chat-options-svg: #a3a3a3;
+        }
+
+        .chat-container {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 50px;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .chat-box {
+            max-height: 600px;
+            overflow-y: auto;
+            background-color: #131719;
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #8147fc;
+        }
+
+        .message-content {
+            background-color: #14181a;
+            border-radius: 10px;
+            padding: 15px;
+            max-width: 70%;
+            color: #a3a3a3;
+            position: relative;
+        }
+
+        .message-content strong {
+            color: #8147fc;
+        }
+
+        .message p {
+            margin: 0;
+        }
+
+        .delete-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: none;
+            cursor: pointer;
+        }
+
+        .message:hover .delete-button {
+            display: inline-block;
+        }
+
+        .input-group {
+            margin-top: 20px;
+            border-radius: 10px;
+            background-color: #14181a;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-group input[type="text"] {
+            background-color: transparent;
+            border: none;
+            color: var(--chat-text-color);
+            font-size: 13px;
+            width: 80%; /* Уменьшаем ширину для кнопки */
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .input-group input[type="file"] {
+            display: none;
+        }
+
+        .input-group button {
+            border-radius: 10px;
+            background-color: #8147fc;
+            color: white;
+            padding: 10px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        .input-group button:hover {
+            background-color: #703bb2;
+        }
+
+        .message img {
+            max-width: 100%;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+
+        .attachment-icon {
+            cursor: pointer;
+            font-size: 20px;
+            color: #8147fc;
+            margin-right: 10px; /* Расстояние между иконкой и полем ввода */
+        }
+
+    </style>
+</head>
+<body class="--dark-theme">
+    <div class="container chat-container">
+        <h1 class="text-center my-4">Чат</h1>
+        <div class="chat-box">
+            {% for message in chat_messages %}
+                <div class="message">
+                    <img src="{% if message.user.gymmember.profile_image %}{{ message.user.gymmember.profile_image.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}" 
+                         alt="Avatar" class="avatar">
+                    <div class="message-content">
+                        <strong>{{ message.user.username }}:</strong>
+                        <p>{{ message.content|safe }}</p>
+
+                        {% if message.image %}
+                            <!-- Показываем изображение сообщения -->
+                            <img src="{{ message.image.url }}" alt="Message Image" class="img-fluid rounded" style="max-width: 100%; margin-top: 5px;">
+                        {% endif %}
+
+                        {% if user_role and user_role.role %}
+                            {% if user_role.role == 'admin' or user_role.role == 'trainer' or message.user == request.user %}
+                                <form action="{% url 'delete_message' message.id %}" method="post" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm delete-button">Удалить</button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Форма для отправки сообщения с изображением -->
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group input-group">
+                <!-- Кнопка для выбора изображения (иконка скрепки) -->
+                <label for="imageUpload" class="attachment-icon">
+                    <!-- Символ скрепки -->
+                    <span>📎</span>
+                </label>
+                <input type="file" name="image" accept="image/*" id="imageUpload" class="form-control-file">
+                <input type="text" name="content" class="form-control" placeholder="Введите сообщение..." required>
+                <div class="input-group-append">
+                    <button type="submit" class="btn">Отправить</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подтверждение</title>
+    {% load static %}
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-image: url('{% static 'images/6288409505.jpg' %}'); /* Ваше фоновое изображение */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: #f1f1f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .confirmation-container {
+            background-color: rgba(30, 30, 30, 0.8);
+            padding: 40px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center; /* Центрируем текст */
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+
+        p {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        /* Стиль кнопки */
+        .back-button {
+            display: inline-block;
+            padding: 12px 20px;
+            background-color: #5cb85c;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-button:hover {
+            background-color: #4cae4c;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="confirmation-container">
+        <h1>Подтверждение выбора</h1>
+        <p>Имя: {{ first_name }}</p>
+        <p>Фамилия: {{ last_name }}</p>
+        <p>Email: {{ email }}</p>
+        <p>Вы выбрали план: {{ plan.name }}</p>
+        <p>Ваш тренер: {{ trainer.name }}</p>
+        <p>Дополнительная информация: {{ additional_info }}</p>
+        <a href="http://127.0.0.1:8000/" class="back-button">Вернуться</a>
+
+    </div>
+
+</body>
+</html>
