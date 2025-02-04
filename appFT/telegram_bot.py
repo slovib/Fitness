@@ -1,135 +1,149 @@
-import requests
-import time
+import telebot
+import psycopg2
+from datetime import datetime, timedelta
 
+# Токен бота и ID админа
 bot_token = '5724647176:AAEuC1p7C-emm_-TkfKvdtPuR5y3yTH5kbE'
-admin_chat_id = '526973879'  # Ваш chat_id
-subscribed_users = set()  # Множество для хранения ID чатов подписанных пользователей
-sent_welcome_message_chats = set()  # Множество для хранения ID чатов, которым уже отправили приветствие
-user_status = {}  # Словарь для хранения статусов пользователей
-user_requests = {}  # Словарь для хранения истории запросов пользователей
-last_update_id = None  # Для отслеживания последнего обработанного обновления
+admin_chat_id = '526973879'
 
-# Функция отправки сообщений админу
-def send_message_to_admin(message):
-    url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
-    data = {
-        'chat_id': admin_chat_id,
-        'text': message,
-    }
+bot = telebot.TeleBot(bot_token)
+
+def connect_db():
     try:
-        response = requests.post(url, data=data)
-        return response.json()
+        return psycopg2.connect(
+            dbname="ll",
+            user="postgres",
+            password="123",
+            host="localhost",
+            port="5433"
+        )
     except Exception as e:
-        print(f"Ошибка отправки сообщения админу: {e}")
+        print(f"Ошибка подключения к БД: {e}")
         return None
 
-# Функция отправки сообщений пользователю
-def send_message_to_user(chat_id, message):
-    url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
-    data = {
-        'chat_id': chat_id,
-        'text': message,
-    }
+def create_table():
+    conn = connect_db()
+    if conn:
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS message_user (
+                        user_id BIGINT PRIMARY KEY,
+                        message TEXT,
+                        admin_reply TEXT DEFAULT NULL,
+                        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+                conn.commit()
+        except Exception as e:
+            print(f"Ошибка при создании таблицы: {e}")
+        finally:
+            conn.close()
+
+def delete_old_messages():
+    conn = connect_db()
+    if conn:
+        try:
+            with conn.cursor() as cursor:
+                cutoff_date = datetime.now() - timedelta(days=10)
+                cursor.execute("DELETE FROM message_user WHERE timestamp < %s;", (cutoff_date,))
+                conn.commit()
+        except Exception as e:
+            print(f"Ошибка при удалении старых сообщений: {e}")
+        finally:
+            conn.close()
+
+def save_message_to_db(user_id, message, admin_reply=None):
+    conn = connect_db()
+    if conn:
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO message_user (user_id, message, admin_reply)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (user_id) DO UPDATE 
+                    SET message = EXCLUDED.message, admin_reply = EXCLUDED.admin_reply, timestamp = CURRENT_TIMESTAMP;
+                """, (user_id, message, admin_reply))
+                conn.commit()
+        except Exception as e:
+            print(f"Ошибка при сохранении сообщения: {e}")
+        finally:
+            conn.close()
+
+def get_message_from_db(user_id):
+    conn = connect_db()
+    if conn:
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT message, admin_reply FROM message_user WHERE user_id = %s;", (user_id,))
+                return cursor.fetchone()
+        except Exception as e:
+            print(f"Ошибка при получении сообщения: {e}")
+        finally:
+            conn.close()
+    return None
+
+def get_all_users():
+    conn = connect_db()
+    if conn:
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT user_id FROM message_user;")
+                return [user[0] for user in cursor.fetchall()]
+        except Exception as e:
+            print(f"Ошибка при извлечении пользователей: {e}")
+        finally:
+            conn.close()
+    return []
+
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(message, "Привет! 👋 Напиши свою проблему, и мы рассмотрим её в течение 10 часов. 🕒")
+
+@bot.message_handler(func=lambda message: not message.text.startswith('\\ответ') and not message.text.startswith('/news'))
+def handle_user_message(message):
+    user_id = message.from_user.id
+    user_message = message.text
+    save_message_to_db(user_id, user_message)
+    bot.reply_to(message, "Спасибо за ваше сообщение! 🙌 Мы рассмотрим вашу проблему в течение 10 часов. ⏳")
+    bot.send_message(admin_chat_id, f"Новое сообщение от {user_id}: {user_message}")
+
+@bot.message_handler(func=lambda message: message.text.startswith('\\ответ'))
+def handle_admin_reply(message):
     try:
-        requests.post(url, data=data)
-    except Exception as e:
-        print(f"Ошибка отправки сообщения пользователю: {e}")
-
-# Функция для отправки приветственного сообщения пользователю
-def send_welcome_message(chat_id):
-    message = "Привет! Если у тебя есть проблема или вопрос, напиши мне!"
-    send_message_to_user(chat_id, message)
-    user_status[chat_id] = "Новый запрос"  # Устанавливаем начальный статус
-    user_requests[chat_id] = []  # Инициализируем список запросов пользователя
-
-# Функция для обработки статуса запроса
-def get_user_status(chat_id):
-    return user_status.get(chat_id, "Статус не найден")
-
-# Функция для добавления запроса пользователя
-def add_user_request(chat_id, request_text):
-    if chat_id not in user_requests:
-        user_requests[chat_id] = []
-    user_requests[chat_id].append(request_text)
-
-# Функция для получения всех запросов пользователя
-def get_user_requests(chat_id):
-    requests = user_requests.get(chat_id, [])
-    if not requests:
-        return "У вас нет запросов."
-    return "\n".join(f"{i + 1}. {request}" for i, request in enumerate(requests))
-
-# Функция для обработки сообщений от пользователя
-def handle_message(update):
-    chat_id = update['message']['chat']['id']
-    text = update['message'].get('text', '')
-
-    # Добавление пользователя в список подписанных пользователей, если он использует /start
-    if text == '/start' and chat_id not in sent_welcome_message_chats:
-        send_welcome_message(chat_id)
-        sent_welcome_message_chats.add(chat_id)  # Добавляем в множество, чтобы больше не отправлять
-        subscribed_users.add(chat_id)  # Добавляем пользователя в список подписанных пользователей
-
-    # Обработка команды /status для получения статуса пользователя
-    elif text.lower() == '/status':
-        user_status_message = get_user_status(chat_id)
-        send_message_to_user(chat_id, f"Ваш текущий статус: {user_status_message}")
-
-    # Обработка команды /requests для получения всех запросов пользователя
-    elif text.lower() == '/requests':
-        user_requests_message = get_user_requests(chat_id)
-        send_message_to_user(chat_id, f"Ваши запросы:\n{user_requests_message}")
-
-    # Обработка проблемы пользователя
-    elif text.lower().startswith('проблема'):
-        # Устанавливаем статус "Обрабатывается" для пользователя
-        user_status[chat_id] = "Обрабатывается"
-        add_user_request(chat_id, text)  # Добавляем запрос в историю
-        send_message_to_admin(f"Проблема от пользователя {chat_id}: {text}")
-        response_message = "Спасибо за ваше сообщение! Мы с вами свяжемся."
-        send_message_to_user(chat_id, response_message)
-    
-    # Обработка команды /ответ
-    elif text.startswith('/ответ'):
-        # Проверка, что сообщение отправил админ
-        if chat_id == int(admin_chat_id):
-            parts = text.split(' ', 2)
-            if len(parts) == 3:
-                target_chat_id = parts[1]  # ID чата пользователя
-                response_text = parts[2]  # Текст ответа
-                send_message_to_user(target_chat_id, response_text)
-                send_message_to_admin(f"Ответ отправлен пользователю {target_chat_id}: {response_text}")
+        parts = message.text.split()
+        user_id = int(parts[1])
+        admin_reply = ' '.join(parts[2:])
+        result = get_message_from_db(user_id)
+        if result:
+            user_message, current_admin_reply = result
+            if not current_admin_reply:
+                save_message_to_db(user_id, user_message, admin_reply)
+                bot.send_message(user_id, f"Ответ от администратора: {admin_reply} 📩")
+                bot.send_message(admin_chat_id, f"Ответ отправлен пользователю {user_id}. ✅")
             else:
-                send_message_to_admin("Неверный формат команды /ответ. Используйте: /ответ <chat_id> <текст ответа>")
-
-    # Ответ на сообщение
-    elif text:
-        send_message_to_admin(f"Сообщение от пользователя {chat_id}: {text}")
-        response_message = "Спасибо за ваше сообщение! Мы с вами свяжемся."
-        send_message_to_user(chat_id, response_message)
-
-# Пример получения обновлений от бота
-def get_updates():
-    global last_update_id
-    url = f'https://api.telegram.org/bot{bot_token}/getUpdates'
-    
-    # Если last_update_id существует, передаем его, чтобы начать получать обновления с последнего ID
-    params = {}
-    if last_update_id:
-        params['offset'] = last_update_id + 1
-    
-    try:
-        response = requests.get(url, params=params)
-        updates = response.json()
-
-        # Обработка каждого обновления
-        for update in updates['result']:
-            handle_message(update)
-            last_update_id = update['update_id']  # Обновляем последний обработанный ID
+                bot.send_message(admin_chat_id, f"Администратор уже ответил пользователю {user_id}. ❌")
+        else:
+            bot.send_message(admin_chat_id, f"Пользователь с ID {user_id} не найден. ❌")
     except Exception as e:
-        print(f"Ошибка получения обновлений: {e}")
+        bot.send_message(admin_chat_id, f"Ошибка при обработке ответа: {e} ❌")
 
-# Запускаем цикл получения сообщений
-while True:
-    get_updates()  # функция, которая обрабатывает обновления
-    time.sleep(2)  # Пауза между запросами (не более 1 раз в 2 секунды)
+@bot.message_handler(commands=['news'])
+def send_news(message):
+    if str(message.from_user.id) == admin_chat_id:
+        news_text = ' '.join(message.text.split()[1:])
+        if news_text:
+            for user_id in get_all_users():
+                try:
+                    bot.send_message(user_id, f"📢 Новость: {news_text}")
+                except Exception as e:
+                    print(f"Не удалось отправить сообщение {user_id}: {e}")
+            bot.send_message(admin_chat_id, "Новость успешно отправлена. ✅")
+        else:
+            bot.send_message(admin_chat_id, "Вы не указали текст новости. ❌")
+    else:
+        bot.reply_to(message, "У вас нет прав для этой команды. 🚫")
+
+create_table()
+delete_old_messages()
+bot.polling(none_stop=True)

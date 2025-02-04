@@ -7,21 +7,53 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.4.0/fonts/remixicon.css" rel="stylesheet" />
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <title>Мастерство веб-дизайна | Фитклуб</title>
+    <style>
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #fff;
+        }
+        .user-name {
+            font-weight: bold;
+            color: #fff;
+        }
+    </style>
 </head>
 <body>
-<nav>
-    <div class="nav__logo">
-        <a href="#"><img src="{% static 'images/logo.png' %}" alt="логотип" /></a>
-    </div>
-    <ul class="nav__links">
-        <li class="link"><a href="#">Главная</a></li>
-        <li class="link"><a href="#">Программа</a></li>
-        <li class="link"><a href="#">Услуга</a></li>
-        <li class="link"><a href="#">О нас</a></li>
-        <li class="link"><a href="#">Сообщество</a></li>
-    </ul>
-    <a href="http://127.0.0.1:8000/register/"><button class="btn">Присоединяйтесь сейчас</button></a>
-</nav>
+    <nav>
+        <div class="nav__logo">
+            <a href="#"><img src="{% static 'images/logo.png' %}" alt="логотип" /></a>
+        </div>
+        <ul class="nav__links">
+            <li class="link"><a href="#">Главная</a></li>
+            <li class="link"><a href="#">Программа</a></li>
+            <li class="link"><a href="#">Услуга</a></li>
+            <li class="link"><a href="#">О нас</a></li>
+            {% if user.is_authenticated %}
+                <li class="link"><a href="http://127.0.0.1:8000/chat/">Чат</a></li>
+            {% endif %}
+        </ul>
+        
+        {% if user.is_authenticated %}
+            <div class="user-info">
+                <a href="http://127.0.0.1:8000/profile/">
+                    <img src="{{ user.gymmember.profile_image.url|default:'/media/profile_images/default_avatar.png' }}" 
+                         alt="Аватар" class="user-avatar">
+                </a>
+                <a href="http://127.0.0.1:8000/profile/" class="user-name">{{ user.username }}</a>
+            </div>
+        {% else %}
+            <a href="http://127.0.0.1:8000/register/"><button class="btn">Присоединяйтесь сейчас</button></a>
+        {% endif %}
+    </nav>
+    
 
 <header class="section__container header__container">
     <div class="header__content">
@@ -224,7 +256,12 @@
             непревзойденными ценовыми планами. Давайте потеем, добиваемся
             успеха и завоевываем вместе!
         </p>
-
+        <div class="footer__telegram">
+            <a href="https://t.me/Slovin_bot" target="_blank">
+                <i class="ri-telegram-fill"></i> Если есть вопросы, пишите сюда @Slovin_bot
+            </a>
+        </div>
+    </div>
 </footer>
 <div class="footer__bar">
     Над проектом работали Жумабеков Азамат, Кикбаев Артур, Айткулов Нурдаулет из группы vt2412!

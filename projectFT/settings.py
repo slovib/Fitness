@@ -113,11 +113,11 @@ WSGI_APPLICATION = 'projectFT.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'new',
+        'NAME': 'll',
         'USER': 'postgres',
-        'PASSWORD': 'rootroot',
+        'PASSWORD': '123',
         'HOST': '127.0.0.1',  # или IP-адрес вашего сервера
-        'PORT': '5432',       # стандартный порт PostgreSQL
+        'PORT': '5433',       # стандартный порт PostgreSQL
     }
 }
 
